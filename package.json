@@ -32,7 +32,7 @@
     "compare-versions": "^3.6.0",
     "connect-history-api-fallback": "^1.6.0",
     "express": "^4.17.1",
-    "express-jwt": "^5.3.1",
+    "express-jwt": "^6.0.0",
     "express-validator": "^6.4.0",
     "htmlparser2": "^4.1.0",
     "jschardet": "^2.2.1",
