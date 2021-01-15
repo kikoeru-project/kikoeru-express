@@ -26,7 +26,7 @@
   "author": "Watanuki-Kimihiro",
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "body-parser": "^1.19.0",
     "cheerio": "^1.0.0-rc.3",
     "compare-versions": "^3.6.0",
