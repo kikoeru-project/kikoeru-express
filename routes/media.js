@@ -20,7 +20,7 @@ router.get('/stream/:id/:index', (req, res, next) => {
           .then((tracks) => {
             const track = tracks[req.params.index];
 
-            const fileName = path.join(rootFolder.path, work.dir, track.subtitle || '', track.title);
+            const fileName = path.join(rootFolder.path, work.dir, track.subtitle || '', encodeURIComponent(track.title));
             const extName = path.extname(fileName);
             if (extName === '.txt' || extName === '.lrc') {
               const fileBuffer = fs.readFileSync(fileName);
@@ -42,7 +42,7 @@ router.get('/stream/:id/:index', (req, res, next) => {
               // By default: /media/stream/RJ123456/subdirs/track.mp3
               // If the folder is deeper: /media/stream/second/RJ123456/subdirs/track.mp3
               const baseUrl = config.offloadStreamPath;
-              let offloadUrl = path.join(baseUrl, rootFolder.name, work.dir, track.subtitle || '', track.title);
+              let offloadUrl = path.join(baseUrl, rootFolder.name, work.dir, track.subtitle || '', encodeURIComponent(track.title));
               if (process.platform === 'win32') {
                 offloadUrl = offloadUrl.replace(/\\/g, '/');
               }
@@ -79,7 +79,7 @@ router.get('/download/:id/:index', (req, res, next) => {
               // By default: /media/download/RJ123456/subdirs/track.mp3
               // If the folder is deeper: /media/download/second/RJ123456/subdirs/track.mp3
               const baseUrl = config.offloadDownloadPath;
-              let offloadUrl = path.join(baseUrl, rootFolder.name, work.dir, track.subtitle || '', track.title);
+              let offloadUrl = path.join(baseUrl, rootFolder.name, work.dir, track.subtitle || '', encodeURIComponent(track.title));
               if (process.platform === 'win32') {
                 offloadUrl = offloadUrl.replace(/\\/g, '/');
               }
@@ -89,7 +89,7 @@ router.get('/download/:id/:index', (req, res, next) => {
               res.redirect(offloadUrl);
             } else {
               // By default, serve file through express
-              res.download(path.join(rootFolder.path, work.dir, track.subtitle || '', track.title));
+              res.download(path.join(rootFolder.path, work.dir, track.subtitle || '', encodeURIComponent(track.title)));
             }
           })
           .catch(err => next(err));
