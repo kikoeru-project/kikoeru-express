@@ -61,6 +61,12 @@ class upgradeLock {
       this.readLockFileConfig();
     }
   }
+  get reasonsNeedUpdate () {
+    return Object.keys(this.lockFileConfig).filter((key) => this.lockFileConfig[key]);
+  }
+  get isUpdateNeeded() {
+    return this.reasonsNeedUpdate.length !== 0;
+  }
   get isLockFilePresent() {
     return fs.existsSync(this.lockFilePath);
   }

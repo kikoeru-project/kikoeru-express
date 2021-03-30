@@ -18,14 +18,15 @@ let lastGitHubResponse = {
 
 // eslint-disable-next-line no-unused-vars
 router.get('/', (req, res, next) => {
-  const lockReason = '新版解决了旧版扫描时将かの仔和こっこ识别为同一个人的问题，建议进行扫描以自动修复这一问题'
+  // TODO 动态定义更新原因
+  const lockReason = '爬虫功能有更新，建议进行扫描以应用更新'
 
   const throttledResponse = {
     current: pjson.version,
     ...lastGitHubResponse,
     notifyUser: config.checkUpdate,
-    lockFileExists: updateLock.isLockFilePresent,
-    lockReason: updateLock.isLockFilePresent ? lockReason : null
+    lockFileExists: updateLock.isUpdateNeeded,
+    lockReason: updateLock.isUpdateNeeded ? lockReason : null
   }
   
   // GitHub API for unauthenticated: 60/hour
@@ -66,14 +67,15 @@ router.get('/', (req, res, next) => {
           update_available: newVerAvailable()
         };
 
+        // TODO 调整 lockFileExists 字段名
         res.send({
           current: current,
           latest_stable: latest_stable,
           latest_release: latest_release,
           update_available: newVerAvailable(),
           notifyUser: config.checkUpdate,
-          lockFileExists: updateLock.isLockFilePresent,
-          lockReason: updateLock.isLockFilePresent ? lockReason : null
+          lockFileExists: updateLock.isUpdateNeeded,
+          lockReason: updateLock.isUpdateNeeded ? lockReason : null
         });
       } else {
         // Empty result or no tag
