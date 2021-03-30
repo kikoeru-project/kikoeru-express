@@ -121,7 +121,7 @@ const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolv
         .filter(function() {
           return $(this).text() === VA;
         }).parent().children('td').children('a').each(function() {
-          const vaName = $(this).text();
+          const vaName = $(this).text().trim();
           work.vas.push({
             id: nameToUUID(vaName),
             name: vaName

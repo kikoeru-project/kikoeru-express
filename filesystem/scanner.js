@@ -417,16 +417,33 @@ const performScan = () => {
       // Scan to repopulate the Voice Actor data for those problematic works
       // かの仔 and こっこ
       let fixVAFailed = false;
-      if (updateLock.isLockFilePresent && updateLock.lockFileConfig.fixVA) {
+      if (updateLock.isLockFilePresent && updateLock.lockFileConfig.needFixVA) {
         emitMainLog(' * 开始进行声优元数据修复，需要联网');
         try {
           const updateResult = await fixVoiceActorBug();
           counts.updated += updateResult;
-          updateLock.removeLockFile();
+          updateLock.updateLockFile( {needFixVA: false} );
           emitMainLog(' * 完成元数据修复');
         } catch (err) {
           emitMainLog(err.toString(), 'error');
           fixVAFailed = true;
+        }
+      }
+
+      // Fix trim issue in t_va
+      // Scan to repopulate the Voice Actor data for those problematic works
+      // such as "犬神あう"(RJ215134) and "犬神あう  "(RJ229312)
+      let fixVATrimFailed = false;
+      if (updateLock.isLockFilePresent && updateLock.lockFileConfig.needFixVATrim) {
+        emitMainLog(' * 开始进行声优元数据修复*，需要联网');
+        try {
+          const updateResult = await fixVoiceActorTrimBug();
+          counts.updated += updateResult;
+          updateLock.updateLockFile( {needFixVATrim: false} );
+          emitMainLog(' * 完成元数据修复');
+        } catch (err) {
+          emitMainLog(err.toString(), 'error');
+          fixVATrimFailed = true;
         }
       }
 
@@ -561,7 +578,7 @@ const performScan = () => {
           });
           
           db.knex.destroy();
-          if (fixVAFailed) {
+          if (fixVAFailed || fixVATrimFailed) {
             process.exit(1);
           }
           process.exit(0);
@@ -631,6 +648,18 @@ const performUpdate = () => {
 const fixVoiceActorBug = () => {
   const baseQuery = db.knex('r_va_work').select('va_id', 'work_id');
   const filter = (query) => query.where('va_id', nameToUUID('かの仔')).orWhere('va_id', nameToUUID('こっこ'));
+  const processor = (id) => updateVoiceActorLimited(id);
+  return refreshWorks(filter(baseQuery), 'work_id', processor);
+};
+
+const fixVoiceActorTrimBug = () => {
+  const baseQuery = db.knex('r_va_work').select('va_id', 'work_id');
+  // Notice! this is not a normal 'space'
+  const VAContainsTrimIssue = db.knex('t_va').select('id').where("name", "like", "%　");
+  const filter = (query) => VAContainsTrimIssue.then((vas) => {
+    vas.forEach((va) => query = query.orWhere('va_id', va.id));
+    return query;
+  });
   const processor = (id) => updateVoiceActorLimited(id);
   return refreshWorks(filter(baseQuery), 'work_id', processor);
 };

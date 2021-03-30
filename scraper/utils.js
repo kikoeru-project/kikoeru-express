@@ -1,4 +1,4 @@
-const { v5: uuidv5 } = require('uuid');
+const uuidv5 = require('uuid').v5
 
 const nameToUUID = (name) => {
   const namespace =  '699d9c07-b965-4399-bafd-18a3cacf073c';
