@@ -24,6 +24,8 @@ const createSchema = () => knex.schema
     table.float('rate_average_2dp'); // FLOAT 类型 [平均评价]
     table.text('rate_count_detail'); // TEXT 类型 [评价分布明细]
     table.text('rank'); // TEXT 类型 [历史销售业绩]
+
+    table.boolean('has_subtitle'); // BOOLEAN 类型 [是否包含字幕文件]
     
     table.foreign('circle_id').references('id').inTable('t_circle'); // FOREIGN KEY 外键
     table.index(['circle_id', 'release', 'dl_count', 'review_count', 'price', 'rate_average_2dp'], 't_work_index'); // INDEX 索引
@@ -89,7 +91,8 @@ const createSchema = () => knex.schema
           t_work.rate_count,
           t_work.rate_average_2dp,
           t_work.rate_count_detail,
-          t_work.rank
+          t_work.rank,
+          t_work.has_subtitle
         FROM t_work
         JOIN t_circle ON t_circle.id = t_work.circle_id
       ) AS baseQuery
