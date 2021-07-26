@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const {hasSubtitle} = require("../filesystem/utils");
 const { config } = require('../config');
 
 const databaseExist = fs.existsSync(path.join(config.databaseFolderDir, 'db.sqlite3'));
@@ -14,75 +15,73 @@ const knex = require('knex')(conn);
  * @param {Object} work Work object.
  */
 // Using trx as a query builder:
-const insertWorkMetadata = work => knex.transaction(trx => trx.raw(
-  trx('t_circle')
-    .insert({
-      id: work.circle.id,
-      name: work.circle.name,
-    }).toString().replace('insert', 'insert or ignore'),
-)
-  .then(() => trx('t_work')
-    .insert({
-      id: work.id,
-      root_folder: work.rootFolderName,
-      dir: work.dir,
-      title: work.title,
-      circle_id: work.circle.id,
-      nsfw: work.nsfw,
-      release: work.release,
+const insertWorkMetadata = work => knex.transaction(async trx => {
+  await trx.raw(
+      trx('t_circle')
+          .insert({
+            id: work.circle.id,
+            name: work.circle.name,
+          }).toString().replace('insert', 'insert or ignore'),
+  );
+  await trx('t_work')
+      .insert({
+        id: work.id,
+        root_folder: work.rootFolderName,
+        dir: work.dir,
+        title: work.title,
+        circle_id: work.circle.id,
+        nsfw: work.nsfw,
+        release: work.release,
 
-      dl_count: work.dl_count,
-      price: work.price,
-      review_count: work.review_count,
-      rate_count: work.rate_count,
-      rate_average_2dp: work.rate_average_2dp,
-      rate_count_detail: JSON.stringify(work.rate_count_detail),
-      rank: work.rank ? JSON.stringify(work.rank) : null
-    }))
-  .then(() => {
-    // Now that work is in the database, insert relationships
-    const promises = [];
-
-    for (let i = 0; i < work.tags.length; i += 1) {
-      promises.push(trx.raw(
+        dl_count: work.dl_count,
+        price: work.price,
+        review_count: work.review_count,
+        rate_count: work.rate_count,
+        rate_average_2dp: work.rate_average_2dp,
+        rate_count_detail: JSON.stringify(work.rate_count_detail),
+        rank: work.rank ? JSON.stringify(work.rank) : null,
+        has_subtitle: await hasSubtitle(config.rootFolders.find((rootFolder) => rootFolder.name === work.rootFolderName), work.dir)
+      });
+  const promises = [];
+  for (let i = 0; i < work.tags.length; i += 1) {
+    promises.push(trx.raw(
         trx('t_tag')
-          .insert({
-            id: work.tags[i].id,
-            name: work.tags[i].name,
-          }).toString().replace('insert', 'insert or ignore'),
-      )
-        .then(() => trx('r_tag_work')
-          .insert({
-            tag_id: work.tags[i].id,
-            work_id: work.id,
-          })));
-    }
-
-    for (let i = 0; i < work.vas.length; i += 1) {
-      promises.push(trx.raw(
-        trx('t_va')
-          .insert({
-            id: work.vas[i].id,
-            name: work.vas[i].name,
-          }).toString().replace('insert', 'insert or ignore'),
-      )
-        .then(() => trx.raw(
-          trx('r_va_work')
             .insert({
-              va_id: work.vas[i].id,
+              id: work.tags[i].id,
+              name: work.tags[i].name,
+            }).toString().replace('insert', 'insert or ignore'),
+    )
+        .then(() => trx('r_tag_work')
+            .insert({
+              tag_id: work.tags[i].id,
               work_id: work.id,
-            }).toString().replace('insert', 'insert or ignore'))));
-    }
-
-    return Promise.all(promises)
-      .then(() => trx);
-  }));
+            })));
+  }
+  for (let i = 0; i < work.vas.length; i += 1) {
+    promises.push(trx.raw(
+        trx('t_va')
+            .insert({
+              id: work.vas[i].id,
+              name: work.vas[i].name,
+            }).toString().replace('insert', 'insert or ignore'),
+    )
+        .then(() => trx.raw(
+            trx('r_va_work')
+                .insert({
+                  va_id: work.vas[i].id,
+                  work_id: work.id,
+                }).toString().replace('insert', 'insert or ignore'))));
+  }
+  await Promise.all(promises);
+  // return trx;
+});
 
 /**
  * 更新音声的动态元数据
  * @param {Object} work Work object.
  */
 const updateWorkMetadata = (work, options = {}) => knex.transaction(async (trx) => {
+  const {root_folder, dir} = await trx('t_work').select(['root_folder', 'dir']).where('id', '=', work.id).first();
   await trx('t_work')
     .where('id', '=', work.id)
     .update({
@@ -93,6 +92,7 @@ const updateWorkMetadata = (work, options = {}) => knex.transaction(async (trx) 
       rate_average_2dp: work.rate_average_2dp,
       rate_count_detail: JSON.stringify(work.rate_count_detail),
       rank: work.rank ? JSON.stringify(work.rank) : null,
+      has_subtitle: await hasSubtitle(config.rootFolders.find((rootFolder) => rootFolder.name === root_folder), dir)
     });
 
   if (options.includeVA || options.refreshAll) {

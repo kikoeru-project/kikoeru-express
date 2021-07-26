@@ -6,6 +6,21 @@ const { joinFragments } = require('../routes/utils/url')
 const { config } = require('../config');
 
 /**
+ * 判断一个音声是否包含字幕文件（.lrc）
+ * @param {Object} rootFolder 根文件夹对象 { name: '别名', path: '绝对路径' }
+ * @param {string} relativePath 相对路径
+ */
+const hasSubtitle = (rootFolder, relativePath) => recursiveReaddir(path.join(rootFolder.path, relativePath))
+    .then((files) => {
+      const lrcFiles = files.filter((file) => {
+        const ext = path.extname(file);
+        return (ext === '.lrc' || ext === '.ass');
+      })
+      return Boolean(lrcFiles.length);
+    })
+
+
+/**
  * Returns list of playable tracks in a given folder. Track is an object
  * containing 'title', 'subtitle' and 'hash'.
  * @param {Number} id Work identifier. Currently, RJ/RE code.
@@ -231,5 +246,6 @@ module.exports = {
   getFolderList,
   deleteCoverImageFromDisk,
   saveCoverImageToDisk,
+  hasSubtitle
 };
 
