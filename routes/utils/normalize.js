@@ -1,4 +1,4 @@
-const strftime  = require('./strftime')
+const strftime = require('./strftime')
 
 // Normalize API endpoints
 const normalize = (works, options = {}) => {
