@@ -1,7 +1,15 @@
 {
   "name": "kikoeru-express",
-  "version": "0.6.1",
-  "description": "server",
+  "version": "0.6.2",
+  "description": "A self-hosted media server for listening to your DLsite voice works.",
+  "homepage": "https://github.com/kikoeru-project/kikoeru-express",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:kikoeru-project/kikoeru-express.git"
+  },
+  "keywords": [
+    "kikoeru"
+  ],
   "engines": {
     "node": ">=12.0.0"
   },
@@ -37,6 +45,9 @@
     "test": "cross-env eslint . && cross-env NODE_ENV=test mocha test/"
   },
   "author": "Watanuki-Kimihiro",
+  "contributors": [
+    "umonaca <mw2010a@gmail.com>"
+  ],
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "@umonaca/umzug": "^2.3.1",
