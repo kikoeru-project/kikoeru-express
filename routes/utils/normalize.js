@@ -9,6 +9,7 @@ const normalize = (works, options = {}) => {
     record.rank = record.rank ? JSON.parse(record.rank) : null;
     record.vas = JSON.parse(record.vaObj)['vas'];
     record.tags = JSON.parse(record.tagObj)['tags'];
+    record.has_subtitle = Boolean(record.has_subtitle);
     delete record.circleObj;
     delete record.vaObj;
     delete record.tagObj;

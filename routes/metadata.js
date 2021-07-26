@@ -76,6 +76,7 @@ router.get('/works',
   query('page').optional({nullable: true}).isInt(),
   query('sort').optional({nullable: true}).isIn(['desc', 'asc']),
   query('seed').optional({nullable: true}).isInt(),
+  query('subtitle').optional({nullable: true}).isInt(),
   // eslint-disable-next-line no-unused-vars
   async (req, res, next) => {
     if(!isValidRequest(req, res)) return;
@@ -88,9 +89,16 @@ router.get('/works',
     const offset = (currentPage - 1) * PAGE_SIZE;
     const username = config.auth ? req.user.name : 'admin';
     const shuffleSeed = req.query.seed ? req.query.seed : 7;
-    
+    const subtitlesOnly = parseInt(req.query.subtitle);
+
     try {
-      const query = () => db.getWorksBy({username: username});
+      let query;
+      if (subtitlesOnly) {
+        query = () => db.getWorksBy({username: username})
+            .where('staticMetadata.has_subtitle', '=', 1);
+      } else {
+        query = () => db.getWorksBy({username: username})
+      }
       const totalCount = await query().count('id as count');
 
       let works = null;
@@ -107,7 +115,7 @@ router.get('/works',
       }
 
       works = normalize(works);
-    
+
       res.send({
         works,
         pagination: {
@@ -133,7 +141,7 @@ router.get('/:field(circle|tag|va)s/:id',
     return db.getMetadata({field: req.params.field, id: req.params.id})
       .then(item => {
         if (item) {
-          res.send(item) 
+          res.send(item)
         } else {
           const errorMessage= {
             'circle': `社团${req.params.id}不存在`,
@@ -146,8 +154,10 @@ router.get('/:field(circle|tag|va)s/:id',
       .catch(err => next(err));
 });
 
-// eslint-disable-next-line no-unused-vars
-router.get('/search/:keyword?', async (req, res, next) => {
+router.get('/search/:keyword?',
+    query('subtitle').optional({nullable: true}).isInt(),
+    // eslint-disable-next-line no-unused-vars
+    async (req, res, next) => {
   const keyword = req.params.keyword ? req.params.keyword.trim() : '';
   const currentPage = parseInt(req.query.page) || 1;
   // 通过 "音声id, 贩卖日, 用户评价， 售出数, 评论数量, 价格, 平均评价, 全年龄新作" 排序
@@ -157,9 +167,16 @@ router.get('/search/:keyword?', async (req, res, next) => {
   const offset = (currentPage - 1) * PAGE_SIZE;
   const username = config.auth ? req.user.name : 'admin';
   const shuffleSeed = req.query.seed ? req.query.seed : 7;
-  
+  const subtitlesOnly = parseInt(req.query.subtitle);
+
   try {
-    const query = () => db.getWorksByKeyWord({keyword: keyword, username: username});
+    let query;
+    if (subtitlesOnly) {
+      query = () => db.getWorksByKeyWord({keyword: keyword, username: username})
+          .where('staticMetadata.has_subtitle', '=', 1);
+    } else {
+      query = () => db.getWorksByKeyWord({keyword: keyword, username: username});
+    }
     const totalCount = await query().count('id as count');
 
     let works = null;
@@ -191,6 +208,7 @@ router.get('/search/:keyword?', async (req, res, next) => {
 // GET list of work ids, restricted by circle/tag/VA
 router.get('/:field(circle|tag|va)s/:id/works',
   param('field').isIn(['circle', 'tag', 'va']),
+  query('subtitle').optional({nullable: true}).isInt(),
   // eslint-disable-next-line no-unused-vars
   async (req, res, next) => {
     // In case regex matching goes wrong
@@ -204,9 +222,16 @@ router.get('/:field(circle|tag|va)s/:id/works',
     const offset = (currentPage - 1) * PAGE_SIZE;
     const username = config.auth ? req.user.name : 'admin';
     const shuffleSeed = req.query.seed ? req.query.seed : 7;
+    const subtitlesOnly = parseInt(req.query.subtitle);
 
     try {
-      const query = () => db.getWorksBy({id: req.params.id, field: req.params.field, username: username});
+      let query;
+      if (subtitlesOnly) {
+        query = () => db.getWorksBy({id: req.params.id, field: req.params.field, username: username})
+            .where('staticMetadata.has_subtitle', '=', 1);
+      } else {
+        query = () => db.getWorksBy({id: req.params.id, field: req.params.field, username: username});
+      }
       const totalCount = await query().count('id as count');
 
       let works = null;
