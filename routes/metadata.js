@@ -125,12 +125,16 @@ router.get('/works',
 
 // GET name of a circle/tag/VA /series(newAdd)
 router.get('/:field(circle|tag|va|serie)s/:id',
-    param('field').isIn(['circle', 'series', 'tag', 'va']),
+    param('field').isIn(['circle', 'serie', 'tag', 'va']),
     (req, res, next) => {
         // In case regex matching goes wrong
         if (!isValidRequest(req, res)) return;
 
-        return db.getMetadata({field: req.params.field, id: req.params.id})
+        let field = req.params.field;
+        if (field === 'serie'){
+            field = 'series'
+        }
+        return db.getMetadata({field, id: req.params.id})
             .then(item => {
                 if (item) {
                     res.send(item)
@@ -191,7 +195,7 @@ router.get('/search/:keyword?', async (req, res, next) => {
 
 // GET list of work ids, restricted by circle/tag/VA/ series(newAdd)
 router.get('/:field(circle|tag|va|serie)s/:id/works',
-    param('field').isIn(['circle', 'series', 'tag', 'va']),
+    param('field').isIn(['circle', 'serie', 'tag', 'va']),
     // eslint-disable-next-line no-unused-vars
     async (req, res, next) => {
         // In case regex matching goes wrong
@@ -207,7 +211,12 @@ router.get('/:field(circle|tag|va|serie)s/:id/works',
         const shuffleSeed = req.query.seed ? req.query.seed : 7;
 
         try {
-            const query = () => db.getWorksBy({id: req.params.id, field: req.params.field, username: username});
+            let field = req.params.field;
+            if (field === 'serie'){
+                field = 'series'
+            }
+
+            const query = () => db.getWorksBy({id: req.params.id, field, username: username});
             const totalCount = await query().count('id as count');
 
             let works = null;
@@ -238,12 +247,15 @@ router.get('/:field(circle|tag|va|serie)s/:id/works',
 
 // GET list of circles/tags/VAs/series(newAdd)
 router.get('/:field(circle|tag|va|serie)s/',
-    param('field').isIn(['circle', 'series', 'tag', 'va']),
+    param('field').isIn(['circle', 'serie', 'tag', 'va']),
     (req, res, next) => {
         // In case regex matching goes wrong
         if (!isValidRequest(req, res)) return;
 
-        const field = req.params.field;
+        let field = req.params.field;
+        if (field === 'serie'){
+            field = 'series'
+        }
         db.getLabels(field)
             .orderBy(`name`, 'asc')
             .then(list => res.send(list))
