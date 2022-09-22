@@ -11,6 +11,7 @@ exports.down = async function(knex) {
       SELECT t_work.id,
         t_work.title,
         json_object('id', t_work.circle_id, 'name', t_circle.name) AS circleObj,
+        json_object('id', t_work.series_id, 'name', t_series.name) AS seriesObj,
         t_work.release,
         t_work.review_count,
         t_work.dl_count,
@@ -23,6 +24,7 @@ exports.down = async function(knex) {
         userrate.user_name
       FROM t_work
       JOIN t_circle on t_circle.id = t_work.circle_id
+      JOIN t_series on t_series.id = t_work.series_id
       JOIN r_va_work on r_va_work.work_id = t_work.id
       join t_va on t_va.id = r_va_work.va_id
       JOIN (

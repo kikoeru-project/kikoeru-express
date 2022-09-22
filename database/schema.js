@@ -8,15 +8,20 @@ const createSchema = () => knex.schema
     table.increments(); // id自增列(INTEGER 类型)，会被用作主键 [社团id]
     table.string('name').notNullable(); // VARCHAR 类型 [社团名称]
   })
+  // rxq 系列的表和关联表
+  .createTable('t_series', (table) => {
+    table.increments(); // id
+    table.string('name').notNullable();
+  })
   .createTable('t_work', (table) => {
     table.increments(); // id自增列(INTEGER 类型)，会被用作主键 [音声id]
     table.string('root_folder').notNullable(); // VARCHAR 类型 [根文件夹别名]
     table.string('dir').notNullable(); // VARCHAR 类型 [相对存储路径]
     table.string('title').notNullable(); // VARCHAR 类型 [音声名称]
     table.integer('circle_id').notNullable(); // INTEGER 类型 [社团id]
+    table.integer('series_id').notNullable(); // INTEGER 系列 [系列id]
     table.boolean('nsfw'); // BOOLEAN 类型
     table.string('release');  // VARCHAR 类型 [贩卖日 (YYYY-MM-DD)]
-
     table.integer('dl_count'); // INTEGER 类型 [售出数]
     table.integer('price'); // INTEGER 类型 [价格]
     table.integer('review_count'); // INTEGER 类型 [评论数量]
@@ -24,9 +29,9 @@ const createSchema = () => knex.schema
     table.float('rate_average_2dp'); // FLOAT 类型 [平均评价]
     table.text('rate_count_detail'); // TEXT 类型 [评价分布明细]
     table.text('rank'); // TEXT 类型 [历史销售业绩]
-    
     table.foreign('circle_id').references('id').inTable('t_circle'); // FOREIGN KEY 外键
-    table.index(['circle_id', 'release', 'dl_count', 'review_count', 'price', 'rate_average_2dp'], 't_work_index'); // INDEX 索引
+    table.foreign('series_id').references('id').inTable('t_series'); // FOREIGN KEY 外键
+    table.index(['circle_id','series_id', 'release', 'dl_count', 'review_count', 'price', 'rate_average_2dp'], 't_work_index'); // INDEX 索引
   })
   .createTable('t_tag', (table) => {
     table.increments(); // id自增列(INTEGER 类型)，会被用作主键 [标签id]
@@ -79,8 +84,11 @@ const createSchema = () => knex.schema
         SELECT t_work.id, 
           t_work.title,
           t_work.circle_id,
+          t_work.series_id,
           t_circle.name,
+          t_series.name,
           json_object('id', t_work.circle_id, 'name', t_circle.name) AS circleObj,
+          json_object('id', t_work.series_id, 'name', t_series.name) AS seriesObj,
           t_work.nsfw,
           t_work.release,
           t_work.dl_count,
@@ -92,6 +100,7 @@ const createSchema = () => knex.schema
           t_work.rank
         FROM t_work
         JOIN t_circle ON t_circle.id = t_work.circle_id
+        JOIN t_series ON t_series.id = t_work.series_id
       ) AS baseQuery
       JOIN r_va_work ON r_va_work.work_id = baseQuery.id
       JOIN t_va ON t_va.id = r_va_work.va_id

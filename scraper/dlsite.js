@@ -3,6 +3,7 @@ const cheerio = require('cheerio'); // 解析器
 const axios = require('./axios'); // 数据请求
 const { nameToUUID, hasLetter } = require('./utils');
 const scrapeWorkMetadataFromHVDB = require('./hvdb');
+const {json} = require("express");
 
 /**
  * Scrapes static work metadata from public DLsite page HTML.
@@ -100,7 +101,7 @@ const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolv
           };
         }
       }
-      
+
       // 标签
         workOutline.children('tbody').children('tr').children('th')
         .filter(function() {
@@ -157,6 +158,15 @@ const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolv
       } else {
         resolve(work);
       } 
+    })
+    .then(() => {
+      // 空值处理
+      if (typeof work.series == 'undefined') {
+          work.series = {
+              id: 0,
+              name: '☹'
+          };
+      }
     })
     .catch((error) => {
       if (error.response) {

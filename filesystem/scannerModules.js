@@ -171,7 +171,6 @@ const getMetadata = (id, rootFolderName, dir, tagLanguage) => {
         level: 'info',
         message: '元数据抓取成功，准备添加到数据库...'
       });
-      
       metadata.rootFolderName = rootFolderName;
       metadata.dir = dir;
       return db.insertWorkMetadata(metadata)
@@ -181,11 +180,13 @@ const getMetadata = (id, rootFolderName, dir, tagLanguage) => {
             level: 'info',
             message: '元数据成功添加到数据库.'
           });
-          
           return 'added';
         })
         .catch((err) => {
           console.error(`  ! [RJ${rjcode}] 在插入元数据过程中出错: ${err.message}`);
+          console.error(err.row);
+          console.error("trace 日志");
+          console.error(err);
           addLogForTask(rjcode, {
             level: 'error',
             message: `在插入元数据过程中出错: ${err.message}`
@@ -594,7 +595,7 @@ const performScan = () => {
  */
 const updateMetadata = (id, options = {}) => {
   let scrapeProcessor = () => scrapeDynamicWorkMetadataFromDLsite(id);
-  if (options.includeVA || options.includeTags || options.includeNSFW || options.refreshAll) {
+  if (options.includeVA || options.includeTags || options.includeSeries || options.includeNSFW || options.refreshAll) {
     // static + dynamic
     scrapeProcessor = () => scrapeWorkMetadataFromDLsite(id, config.tagLanguage);
   }

@@ -2,7 +2,7 @@ exports.up = async function(knex) {
   await knex.raw(`PRAGMA foreign_keys=off;`);
 
   await knex.transaction(async (trx) => {
-    trx.raw('DROP INDEX IF EXISTS t_work_circle_id_release_dl_count_review_count_price_rate_average_2dp_index');
+    trx.raw('DROP INDEX IF EXISTS t_work_circle_series_id_release_dl_count_review_count_price_rate_average_2dp_index');
 
     // SQLite allows DDL in transaction
     await trx.schema.createTable('t_work_new', (table) => {
@@ -11,6 +11,7 @@ exports.up = async function(knex) {
       table.string('dir').notNullable(); // VARCHAR 类型 [相对存储路径]
       table.string('title').notNullable(); // VARCHAR 类型 [音声名称]
       table.integer('circle_id').notNullable(); // INTEGER 类型 [社团id]
+      table.integer('series_id').notNullable(); // INTEGER 类型 [社团id]
       table.boolean('nsfw'); // BOOLEAN 类型
       table.string('release');  // VARCHAR 类型 [贩卖日 (YYYY-MM-DD)]
   
@@ -23,7 +24,8 @@ exports.up = async function(knex) {
       table.text('rank'); // TEXT 类型 [历史销售业绩]
       
       table.foreign('circle_id').references('id').inTable('t_circle'); // FOREIGN KEY 外键
-      table.index(['circle_id', 'release', 'dl_count', 'review_count', 'price', 'rate_average_2dp'], 't_work_index'); // INDEX 索引
+      table.foreign('series_id').references('id').inTable('t_series'); // FOREIGN KEY 外键
+      table.index(['circle_id', 'series_id', 'release', 'dl_count', 'review_count', 'price', 'rate_average_2dp'], 't_work_index'); // INDEX 索引
     })
     await trx.raw(`INSERT INTO t_work_new SELECT * FROM t_work;`);
     await trx.raw(`DROP TABLE t_work;`);
@@ -46,6 +48,7 @@ exports.down = async function(knex) {
       table.string('dir').notNullable(); // VARCHAR 类型 [相对存储路径]
       table.string('title').notNullable(); // VARCHAR 类型 [音声名称]
       table.integer('circle_id').notNullable(); // INTEGER 类型 [社团id]
+      table.integer('series_id').notNullable(); // INTEGER 类型 [社团id]
       table.boolean('nsfw').notNullable(); // BOOLEAN 类型
       table.string('release').notNullable();  // VARCHAR 类型 [贩卖日 (YYYY-MM-DD)]
   
@@ -58,7 +61,8 @@ exports.down = async function(knex) {
       table.text('rank'); // TEXT 类型 [历史销售业绩]
       
       table.foreign('circle_id').references('id').inTable('t_circle'); // FOREIGN KEY 外键
-      table.index(['circle_id', 'release', 'dl_count', 'review_count', 'price', 'rate_average_2dp'], 't_work_circle_id_release_dl_count_review_count_price_rate_average_2dp_index'); // INDEX 索引
+      table.foreign('series_id').references('id').inTable('t_series'); // FOREIGN KEY 外键
+      table.index(['circle_id','series_id', 'release', 'dl_count', 'review_count', 'price', 'rate_average_2dp'], 't_work_circle_series_id_release_dl_count_review_count_price_rate_average_2dp_index'); // INDEX 索引
     })
     await trx.raw(`INSERT INTO t_work_new SELECT * FROM t_work;`);
     await trx.raw(`DROP TABLE t_work;`);
