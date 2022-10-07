@@ -12,51 +12,53 @@ const { config } = require('../config');
  * @param {String} dir Work directory (absolute).
  */
 const getTrackList = (id, dir) => recursiveReaddir(dir)
-  .then((files) => {
-    // Filter out any files not matching these extensions
-    const filteredFiles = files.filter((file) => {
-      const ext = path.extname(file);
+    .then((files) => {
+      // Filter out any files not matching these extensions
+      const filteredFiles = files.filter((file) => {
+        const ext = path.extname(file);
 
-      return (ext === '.mp3' || ext === '.ogg' || ext === '.opus' || ext === '.wav' || ext === '.aac'
-        || ext === '.flac' || ext === '.webm' || ext === '.mp4'|| ext === '.m4a' 
-        || ext === '.txt' || ext === '.lrc' || ext === '.srt' || ext === '.ass'
-        || ext === '.pdf'
-        || ext === '.jpg' || ext === '.jpeg' || ext === '.png' || ext === '.webp');
-    });
+        return (ext === '.mp3' || ext === '.ogg' || ext === '.opus' || ext === '.wav' || ext === '.aac'
+            || ext === '.flac' || ext === '.webm' || ext === '.mp4'|| ext === '.m4a'
+            || ext === '.txt' || ext === '.lrc' || ext === '.srt' || ext === '.ass'
+            || ext === '.pdf'
+            || ext === '.jpg' || ext === '.jpeg' || ext === '.png' || ext === '.webp');
+      });
 
-    // Sort by folder and title
-    const sortedFiles = orderBy(filteredFiles.map((file) => {
-      const shortFilePath = file.replace(path.join(dir, '/'), '');
-      const dirName = path.dirname(shortFilePath);
+      // Sort by folder and title
+      const sortedFiles = orderBy(filteredFiles.map((file) => {
+        const shortFilePath = file.replace(path.join(dir, '/'), '');
+        const dirName = path.dirname(shortFilePath);
 
-      return {
-        title: path.basename(file),
-        subtitle: dirName === '.' ? null : dirName,
-        ext: path.extname(file),
-      };
-    }), [v => v.subtitle, v => v.title, v => v.ext]);
+        return {
+          title: path.basename(file),
+          subtitle: dirName === '.' ? null : dirName,
+          ext: path.extname(file),
+        };
+      }), [v => v.subtitle, v => v.title, v => v.ext]);
 
-    // Add hash to each file
-    const sortedHashedFiles = sortedFiles.map(
-      (file, index) => ({
-        title: file.title,
-        subtitle: file.subtitle,
-        hash: `${id}/${index}`,
-        ext: file.ext,
-      }),
-    );
+      // Add hash to each file
+      const sortedHashedFiles = sortedFiles.map(
+          (file, index) => ({
+            title: file.title,
+            subtitle: file.subtitle,
+            hash: `${id}/${index}`,
+            ext: file.ext,
+          }),
+      );
 
-    return sortedHashedFiles;
-  })
-  .catch((err) => { throw new Error(`Failed to get tracklist from disk: ${err}`); });
+      return sortedHashedFiles;
+    })
+    .catch((err) => { throw new Error(`Failed to get tracklist from disk: ${err}`); });
 
 /**
  * 转换成树状结构
- * @param {Array} tracks 
- * @param {String} workTitle 
+ * @param {Array} tracks
+ * @param {String} workTitle
  */
-const toTree = (tracks, workTitle, workDir, rootFolder) => {
+const toTree = (tracks, work, rootFolder) => {
   const tree = [];
+  let workTitle = work.title;
+  let workDir = work.dir;
 
   // 插入文件夹
   tracks.forEach(track => {
@@ -97,7 +99,8 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
       offloadStreamUrl = offloadStreamUrl.replace(/\\/g, '/');
       offloadDownloadUrl = offloadDownloadUrl.replace(/\\/g, '/');
     }
-  
+
+
     const textBaseUrl = '/api/media/stream/'
     const mediaStreamBaseUrl = '/api/media/stream/'
     const mediaDownloadBaseUrl = '/api/media/download/'
@@ -105,6 +108,7 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
     const textDownloadBaseUrl = config.offloadMedia ? offloadDownloadUrl : mediaDownloadBaseUrl + track.hash;
     const mediaStreamUrl = config.offloadMedia ? offloadStreamUrl : mediaStreamBaseUrl + track.hash;
     const mediaDownloadUrl = config.offloadMedia ? offloadDownloadUrl : mediaDownloadBaseUrl + track.hash;
+    const volumeWork = work.volumeWork ? work.volumeWork : 0.5;
 
     if (track.ext === '.txt' || track.ext === '.lrc' || track.ext === '.srt' || track.ext === '.ass') {
       fatherFolder.push({
@@ -113,7 +117,8 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         title: track.title,
         workTitle,
         mediaStreamUrl: textStreamBaseUrl,
-        mediaDownloadUrl: textDownloadBaseUrl
+        mediaDownloadUrl: textDownloadBaseUrl,
+        volumeWork: volumeWork
       });
     } else if (track.ext === '.jpg' || track.ext === '.jpeg' || track.ext === '.png' || track.ext === '.webp' ) {
       fatherFolder.push({
@@ -122,7 +127,8 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         title: track.title,
         workTitle,
         mediaStreamUrl,
-        mediaDownloadUrl
+        mediaDownloadUrl,
+        volumeWork
       });
     } else if (track.ext === '.pdf') {
       fatherFolder.push({
@@ -131,7 +137,8 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         title: track.title,
         workTitle,
         mediaStreamUrl,
-        mediaDownloadUrl
+        mediaDownloadUrl,
+        volumeWork
       });
     } else {
       fatherFolder.push({
@@ -140,7 +147,8 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
         title: track.title,
         workTitle,
         mediaStreamUrl,
-        mediaDownloadUrl
+        mediaDownloadUrl,
+        volumeWork
       });
     }
   });
@@ -154,25 +162,25 @@ const toTree = (tracks, workTitle, workDir, rootFolder) => {
  * @param {Object} rootFolder 根文件夹对象 { name: '别名', path: '绝对路径' }
  */
 async function* getFolderList(rootFolder, current = '', depth = 0, callback = function addMainLog(){} ) { // 异步生成器函数 async function*() {}
-  // 浅层遍历
-  const folders = await fs.promises.readdir(path.join(rootFolder.path, current));    
+                                                                                                          // 浅层遍历
+  const folders = await fs.promises.readdir(path.join(rootFolder.path, current));
 
   for (const folder of folders) {
     const absolutePath = path.resolve(rootFolder.path, current, folder);
     const relativePath = path.join(current, folder);
 
     try {
-    // eslint-disable-next-line no-await-in-loop
+      // eslint-disable-next-line no-await-in-loop
       if ((await fs.promises.stat(absolutePath)).isDirectory()) { // 检查是否为文件夹
-          if (folder.match(/RJ\d{6}/)) { // 检查文件夹名称中是否含有RJ号
-            // Found a work folder, don't go any deeper.
-            yield { absolutePath, relativePath, rootFolderName: rootFolder.name, id: parseInt(folder.match(/RJ(\d{6})/)[1]) };
-          } else if (depth + 1 < config.scannerMaxRecursionDepth) {
-            // 若文件夹名称中不含有RJ号，就进入该文件夹内部
-            // Found a folder that's not a work folder, go inside if allowed.
-            yield* getFolderList(rootFolder, relativePath, depth + 1);
-          }
+        if (folder.match(/RJ\d{6}/)) { // 检查文件夹名称中是否含有RJ号
+          // Found a work folder, don't go any deeper.
+          yield { absolutePath, relativePath, rootFolderName: rootFolder.name, id: parseInt(folder.match(/RJ(\d{6})/)[1]) };
+        } else if (depth + 1 < config.scannerMaxRecursionDepth) {
+          // 若文件夹名称中不含有RJ号，就进入该文件夹内部
+          // Found a folder that's not a work folder, go inside if allowed.
+          yield* getFolderList(rootFolder, relativePath, depth + 1);
         }
+      }
     } catch (err) {
       if (err.code === 'EPERM') {
         if (err.path && !err.path.endsWith('System Volume Information')) {
@@ -216,8 +224,8 @@ const saveCoverImageToDisk = (stream, rjcode, type) => new Promise((resolve, rej
   // TODO: don't assume image is a jpg?
   try {
     stream.pipe(
-      fs.createWriteStream(path.join(config.coverFolderDir, `RJ${rjcode}_img_${type}.jpg`))
-        .on('close', () => resolve()),
+        fs.createWriteStream(path.join(config.coverFolderDir, `RJ${rjcode}_img_${type}.jpg`))
+            .on('close', () => resolve()),
     );
   } catch (err) {
     reject(err);
