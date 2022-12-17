@@ -4,6 +4,7 @@ const axios = require('./axios'); // 数据请求
 const { nameToUUID, hasLetter } = require('./utils');
 const scrapeWorkMetadataFromHVDB = require('./hvdb');
 const {json} = require("express");
+const { formatID } = require('../filesystem/utils');
 
 /**
  * Scrapes static work metadata from public DLsite page HTML.
@@ -11,7 +12,7 @@ const {json} = require("express");
  * @param {String} language 标签语言，'ja-jp', 'zh-tw' or 'zh-cn'，默认'zh-cn'
  */
 const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolve, reject) => {
-  const rjcode = (`000000${id}`).slice(-6);
+  const rjcode = formatID(id);
   const url = `https://www.dlsite.com/maniax/work/=/product_id/RJ${rjcode}.html`;
 
   const work = { id, tags: [], vas: [] };
@@ -183,7 +184,7 @@ const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolv
  * @param {number} id Work id.
  */
 const scrapeDynamicWorkMetadataFromDLsite = id => new Promise((resolve, reject) => {
-  const rjcode = (`000000${id}`).slice(-6);
+  const rjcode = formatID(id);
   const url = `https://www.dlsite.com/maniax-touch/product/info/ajax?product_id=RJ${rjcode}`;
 
   axios.retryGet(url, { retry: {} })

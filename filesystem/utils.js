@@ -172,15 +172,18 @@ async function* getFolderList(rootFolder, current = '', depth = 0, callback = fu
     try {
       // eslint-disable-next-line no-await-in-loop
       if ((await fs.promises.stat(absolutePath)).isDirectory()) { // 检查是否为文件夹
-        if (folder.match(/RJ\d{6}/)) { // 检查文件夹名称中是否含有RJ号
-          // Found a work folder, don't go any deeper.
-          yield { absolutePath, relativePath, rootFolderName: rootFolder.name, id: parseInt(folder.match(/RJ(\d{6})/)[1]) };
-        } else if (depth + 1 < config.scannerMaxRecursionDepth) {
-          // 若文件夹名称中不含有RJ号，就进入该文件夹内部
-          // Found a folder that's not a work folder, go inside if allowed.
-          yield* getFolderList(rootFolder, relativePath, depth + 1);
+          if (folder.match(/RJ\d{8}/)) { // 检查文件夹名称中是否含有RJ号 8位
+            // Found a work folder, don't go any deeper.
+            yield { absolutePath, relativePath, rootFolderName: rootFolder.name, id: parseInt(folder.match(/RJ(\d{8})/)[1]) };
+          } else if (folder.match(/RJ\d{6}/)) { // 检查文件夹名称中是否含有RJ号 6位
+            // Found a work folder, don't go any deeper.
+            yield { absolutePath, relativePath, rootFolderName: rootFolder.name, id: parseInt(folder.match(/RJ(\d{6})/)[1]) };
+          } else if (depth + 1 < config.scannerMaxRecursionDepth) {
+            // 若文件夹名称中不含有RJ号，就进入该文件夹内部
+            // Found a folder that's not a work folder, go inside if allowed.
+            yield* getFolderList(rootFolder, relativePath, depth + 1);
+          }
         }
-      }
     } catch (err) {
       if (err.code === 'EPERM') {
         if (err.path && !err.path.endsWith('System Volume Information')) {
@@ -233,11 +236,29 @@ const saveCoverImageToDisk = (stream, rjcode, type) => new Promise((resolve, rej
 });
 
 
+/**
+ * 格式化 id，适配 8 位、6 位 id
+ * @param {number} id
+ * @return {string}
+ */
+
+function formatID(id) {
+  if (id >= 1000000) {
+    // 大于 7 位数，则补全为 8 位
+    id = `0${id}`.slice(-8);
+  } else {
+    // 否则补全为 6 位
+    id = `000000${id}`.slice(-6);
+  }
+
+  return id;
+}
+
 module.exports = {
   getTrackList,
   toTree,
   getFolderList,
   deleteCoverImageFromDisk,
   saveCoverImageToDisk,
+  formatID,
 };
-

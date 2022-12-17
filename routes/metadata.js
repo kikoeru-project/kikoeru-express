@@ -7,6 +7,7 @@ const {getTrackList, toTree} = require('../filesystem/utils');
 const {config} = require('../config');
 const normalize = require('./utils/normalize')
 const {isValidRequest} = require('./utils/validate');
+const { formatID } = require('../filesystem/utils');
 
 const PAGE_SIZE = config.pageSize || 12;
 
@@ -16,7 +17,7 @@ router.get('/cover/:id',
     (req, res, next) => {
         if (!isValidRequest(req, res)) return;
 
-        const rjcode = (`000000${req.params.id}`).slice(-6);
+        const rjcode = formatID(req.params.id);
         const type = req.query.type || 'main'; // 'main', 'sam', '240x240', '360x360'
         res.sendFile(path.join(config.coverFolderDir, `RJ${rjcode}_img_${type}.jpg`), (err) => {
             if (err) {
