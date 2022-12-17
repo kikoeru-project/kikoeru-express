@@ -14,6 +14,7 @@
     },
     "rules": {
       "no-prototype-builtins": "off",
-      "no-process-exit": "off"
+      "no-process-exit": "off",
+      "semi": "error"
     }
 }
