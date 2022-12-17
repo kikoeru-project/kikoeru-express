@@ -2,20 +2,21 @@ const htmlparser = require('htmlparser2'); // 解析器
 
 const axios = require('./axios'); // 数据请求
 const { nameToUUID } = require('./utils');
+const { formatID } = require('../filesystem/utils');
 
 /**
  * Scrapes work metadata from public HVDB page HTML.
  * @param {number} id Work id.
  */
 const scrapeWorkMetadataFromHVDB = id => new Promise((resolve, reject) => {
-  const rjcode = (`000000${id}`).slice(-6);
+  const rjcode = formatID(id);
   const url = `https://hvdb.me/Dashboard/WorkDetails/${id}`;
 
   console.log(`[RJ${rjcode}] 从 HVDB 抓取元数据...`);
   axios.retryGet(url, { retry: {} })
     .then(response => {
-      console.log('res HVDB')
-      return response.data
+      console.log('res HVDB');
+      return response.data;
     })
     .then((data) => { //解析
       const work = { id, tags: [], vas: [] };

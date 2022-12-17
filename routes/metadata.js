@@ -5,8 +5,9 @@ const { param, query} = require('express-validator');
 const db = require('../database/db');
 const { getTrackList, toTree } = require('../filesystem/utils');
 const { config } = require('../config');
-const normalize = require('./utils/normalize')
+const normalize = require('./utils/normalize');
 const { isValidRequest } = require('./utils/validate');
+const { formatID } = require('../filesystem/utils');
 
 const PAGE_SIZE = config.pageSize || 12;
 
@@ -16,7 +17,7 @@ router.get('/cover/:id',
   (req, res, next) => {
     if(!isValidRequest(req, res)) return;
 
-    const rjcode = (`000000${req.params.id}`).slice(-6);
+    const rjcode = formatID(req.params.id);
     const type = req.query.type || 'main'; // 'main', 'sam', '240x240', '360x360'
     res.sendFile(path.join(config.coverFolderDir, `RJ${rjcode}_img_${type}.jpg`), (err) => {
       if (err) {
@@ -103,7 +104,7 @@ router.get('/works',
         works = await query().limit(1).orderBy(db.knex.raw('random()'));
       } else {
         works = await query().offset(offset).limit(PAGE_SIZE).orderBy(order, sort)
-        .orderBy([{ column: 'release', order: 'desc'}, { column: 'id', order: 'desc' }])
+        .orderBy([{ column: 'release', order: 'desc'}, { column: 'id', order: 'desc' }]);
       }
 
       works = normalize(works);
@@ -118,7 +119,7 @@ router.get('/works',
       });
     } catch(err) {
       res.status(500).send({error: '服务器错误'});
-      console.error(err)
+      console.error(err);
       // next(err);
     }
 });
@@ -133,14 +134,14 @@ router.get('/:field(circle|tag|va)s/:id',
     return db.getMetadata({field: req.params.field, id: req.params.id})
       .then(item => {
         if (item) {
-          res.send(item) 
+          res.send(item); 
         } else {
           const errorMessage= {
             'circle': `社团${req.params.id}不存在`,
             'tag': `标签${req.params.id}不存在`,
             'va': `声优${req.params.id}不存在`
-          }
-          res.status(404).send({error: errorMessage[req.params.field]})
+          };
+          res.status(404).send({error: errorMessage[req.params.field]});
         }
       })
       .catch(err => next(err));
@@ -168,7 +169,7 @@ router.get('/search/:keyword?', async (req, res, next) => {
       works = await query().offset(offset).limit(PAGE_SIZE).orderBy(db.knex.raw('id % ?', shuffleSeed));
     } else {
       works = await query().offset(offset).limit(PAGE_SIZE).orderBy(order, sort)
-        .orderBy([{ column: 'release', order: 'desc'}, { column: 'id', order: 'desc' }])
+        .orderBy([{ column: 'release', order: 'desc'}, { column: 'id', order: 'desc' }]);
     }
 
     works = normalize(works);
@@ -215,7 +216,7 @@ router.get('/:field(circle|tag|va)s/:id/works',
         works = await query().offset(offset).limit(PAGE_SIZE).orderBy(db.knex.raw('id % ?', shuffleSeed));
       } else {
         works = await query().offset(offset).limit(PAGE_SIZE).orderBy(order, sort)
-        .orderBy([{ column: 'release', order: 'desc'}, { column: 'id', order: 'desc' }])
+        .orderBy([{ column: 'release', order: 'desc'}, { column: 'id', order: 'desc' }]);
       }
 
       works = normalize(works);

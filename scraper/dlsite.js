@@ -3,6 +3,7 @@ const cheerio = require('cheerio'); // 解析器
 const axios = require('./axios'); // 数据请求
 const { nameToUUID, hasLetter } = require('./utils');
 const scrapeWorkMetadataFromHVDB = require('./hvdb');
+const { formatID } = require('../filesystem/utils');
 
 /**
  * Scrapes static work metadata from public DLsite page HTML.
@@ -10,14 +11,14 @@ const scrapeWorkMetadataFromHVDB = require('./hvdb');
  * @param {String} language 标签语言，'ja-jp', 'zh-tw' or 'zh-cn'，默认'zh-cn'
  */
 const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolve, reject) => {
-  const rjcode = (`000000${id}`).slice(-6);
+  const rjcode = formatID(id);
   const url = `https://www.dlsite.com/maniax/work/=/product_id/RJ${rjcode}.html`;
 
   const work = { id, tags: [], vas: [] };
   let AGE_RATINGS, VA, GENRE, RELEASE, SERIES, COOKIE_LOCALE;
   switch(language) {
     case 'ja-jp':
-      COOKIE_LOCALE = 'locale=ja-jp'
+      COOKIE_LOCALE = 'locale=ja-jp';
       AGE_RATINGS = '年齢指定';
       GENRE = 'ジャンル';
       VA = '声優';
@@ -25,7 +26,7 @@ const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolv
       SERIES = 'シリーズ名';
       break;
     case 'zh-tw':
-      COOKIE_LOCALE = 'locale=zh-tw'
+      COOKIE_LOCALE = 'locale=zh-tw';
       AGE_RATINGS = '年齡指定';
       GENRE = '分類';
       VA = '聲優';
@@ -33,7 +34,7 @@ const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolv
       SERIES = '系列名';
       break;
     default:
-      COOKIE_LOCALE = 'locale=zh-cn'
+      COOKIE_LOCALE = 'locale=zh-cn';
       AGE_RATINGS = '年龄指定';
       GENRE = '分类';
       VA = '声优';
@@ -58,7 +59,7 @@ const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolv
       }
       
       // 'xxxxx [circle_name] | DLsite' => 'xxxxx'
-      const titlePattern = / \[.+\] \| DLsite$/
+      const titlePattern = / \[.+\] \| DLsite$/;
       work.title = work.title.replace(titlePattern, '');
 
       // 社团
@@ -173,7 +174,7 @@ const scrapeStaticWorkMetadataFromDLsite = (id, language) => new Promise((resolv
  * @param {number} id Work id.
  */
 const scrapeDynamicWorkMetadataFromDLsite = id => new Promise((resolve, reject) => {
-  const rjcode = (`000000${id}`).slice(-6);
+  const rjcode = formatID(id);
   const url = `https://www.dlsite.com/maniax-touch/product/info/ajax?product_id=RJ${rjcode}`;
 
   axios.retryGet(url, { retry: {} })
