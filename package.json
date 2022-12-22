@@ -67,7 +67,7 @@
     "https": "^1.0.0",
     "invariant": "^2.2.4",
     "jschardet": "^3.0.0",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "knex": "^0.21.17",
     "knex-migrate": "^1.7.4",
     "limit-promise": "^1.0.6",
