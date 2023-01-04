@@ -9,6 +9,25 @@ const connEnv = process.env.KNEX_ENV || process.env.NODE_ENV || 'development';
 const conn = require('./knexfile')[connEnv]
 const knex = require('knex')(conn);
 
+Date.prototype.Format = function (fmt) {
+    var o = {
+        "M+": this.getMonth() + 1, //月份
+        "d+": this.getDate(), //日
+        "h+": this.getHours(), //小时
+        "m+": this.getMinutes(), //分
+        "s+": this.getSeconds(), //秒
+        "S+": this.getMilliseconds()
+    };
+    if (/(y+)/.test(fmt))
+        fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o) {
+        if (new RegExp("(" + k + ")").test(fmt)) {
+            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (RegExp.$1.length == 2) ? (("00" + o[k]).substr(("" + o[k]).length)) : (("000" + o[k]).substr(("" + o[k]).length)));
+        }
+    }
+    return fmt;
+}
+
 /**
  * Takes a work metadata object and inserts it into the database.
  * @param {Object} work Work object.
@@ -33,6 +52,7 @@ const insertWorkMetadata = work => knex.transaction(
                             name: work.series.name,
                         }).toString().replace('insert', 'insert or ignore')
                 ))
+
                 promises.push(trx.raw(
                     trx('t_work')
                         .insert({
@@ -43,7 +63,9 @@ const insertWorkMetadata = work => knex.transaction(
                             circle_id: work.circle.id,
                             series_id: work.series.id,
                             nsfw: work.nsfw,
-                            release: work.release,
+                            // release: work.release,
+                            // 之后的作品使用添加时间取代对我没用的发售时间
+                            release: new Date().Format("yyyy-MM-dd hh:mm:ss SSS"),
                             dl_count: work.dl_count,
                             price: work.price,
                             review_count: work.review_count,
@@ -148,7 +170,8 @@ const updateWorkMetadata = (work, options = {}) => knex.transaction(async (trx) 
             .update({
                 nsfw: work.nsfw,
                 title: work.title,
-                release: work.release,
+                // release 我换成了加入时间，所以不更新
+                // release: work.release,
             });
     }
 });
