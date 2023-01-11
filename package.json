@@ -68,7 +68,7 @@
     "invariant": "^2.2.4",
     "jschardet": "^3.0.0",
     "jsonwebtoken": "^8.5.1",
-    "knex": "^0.21.17",
+    "knex": "^2.4.0",
     "knex-migrate": "^1.7.4",
     "limit-promise": "^1.0.6",
     "lodash": "^4.17.21",
