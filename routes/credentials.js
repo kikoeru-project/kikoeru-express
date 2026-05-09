@@ -5,6 +5,7 @@ const { md5 } = require('../auth/utils');
 const { canManageUsers, normalizeDisabled, USER_GROUPS } = require('../auth/permissions');
 const { config} = require('../config');
 const db = require('../database/db');
+const userDb = require('../database/users');
 
 const isBuiltInAdmin = user => user.name === 'admin';
 
@@ -124,7 +125,7 @@ router.put('/user/group', [
     return;
   }
 
-  db.updateUserGroup(user, group)
+  userDb.updateUserGroup(user, group)
     .then(() => res.send({ message: '用户组修改成功.' }))
     .catch((err) => {
       if (err.message.indexOf('用户名') !== -1) {
@@ -165,7 +166,7 @@ router.put('/user/disabled', [
     return;
   }
 
-  db.updateUserDisabled(user, disabled)
+  userDb.updateUserDisabled(user, disabled)
     .then(() => res.send({ message: disabled ? '用户已禁用.' : '用户已启用.' }))
     .catch((err) => {
       if (err.message.indexOf('用户名') !== -1) {
