@@ -55,6 +55,7 @@ const createSchema = () => knex.schema
     table.string('name').notNullable();
     table.string('password').notNullable();
     table.string('group').notNullable(); // USER ADMIN guest
+    table.boolean('disabled').notNullable().defaultTo(false);
     table.primary(['name']); // PRIMARY KEYprimary 主键
   })
   .createTable('t_review', (table) => {
