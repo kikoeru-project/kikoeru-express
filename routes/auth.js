@@ -3,6 +3,7 @@ const { check, validationResult } = require('express-validator'); // 后端校�
 const expressJwt = require('express-jwt'); // 把 JWT 的 payload 部分赋值于 req.user
 
 const { signToken, md5 } = require('../auth/utils');
+const { normalizeDisabled } = require('../auth/permissions');
 const db = require('../database/db');
 
 const { config } = require('../config');
@@ -36,6 +37,8 @@ router.post('/me', [
       if (!user) {
         res.set("WWW-Authenticate", "Bearer realm=\"Authorization Required\"");
         res.status(401).send({error: '用户名或密码错误.'});
+      } else if (normalizeDisabled(user.disabled)) {
+        res.status(403).send({error: '账号已被禁用.'});
       } else {
         const token = signToken(user);
         res.send({ token });
@@ -58,8 +61,8 @@ router.get('/me', (req, res, next) => {
   // 同时告诉客户端，服务器是否启用用户验证
   const auth = config.auth;
   const user = config.auth
-    ? { name: req.user.name, group: req.user.group }
-    : { name: 'admin', group: 'administrator' }
+    ? { name: req.user.name, group: req.user.group, disabled: false }
+    : { name: 'admin', group: 'administrator', disabled: false }
   res.send({ user, auth });
 });
 
