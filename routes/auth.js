@@ -3,7 +3,7 @@ const { check, validationResult } = require('express-validator'); // 后端校�
 const expressJwt = require('express-jwt'); // 把 JWT 的 payload 部分赋值于 req.user
 
 const { signToken, md5 } = require('../auth/utils');
-const { normalizeDisabled } = require('../auth/permissions');
+const { normalizeDisabled, rejectDisabledUser } = require('../auth/permissions');
 const db = require('../database/db');
 
 const { config } = require('../config');
@@ -52,7 +52,7 @@ router.post('/me', [
 });
 
 if (config.auth) {
-  router.get('/me', expressJwt({ secret: config.jwtsecret, algorithms: ['HS256'] }));
+  router.get('/me', expressJwt({ secret: config.jwtsecret, algorithms: ['HS256'] }), rejectDisabledUser);
 }
 
 // 获取用户信息
