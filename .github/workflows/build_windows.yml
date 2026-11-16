@@ -1,0 +1,148 @@
+name: Build Windows artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      frontend_ref:
+        description: 'kikoeru-quasar 的分支/tag'
+        required: false
+        default: 'unstable'
+        type: string
+      frontend_repo:
+        description: '前端仓库 (owner/repo)'
+        required: false
+        default: 'Zinhao/kikoeru-quasar'
+        type: string
+
+jobs:
+  build-front-end:
+    runs-on: windows-2019
+    name: Build front end PWA from source
+    steps:
+      - name: Check out front end
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.frontend_repo }}
+          ref: ${{ inputs.frontend_ref }}
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 14
+
+      - name: Install Quasar CLI
+        run: npm install -g @quasar/cli
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build PWA and SPA
+        run: |
+          npx quasar build
+          npx quasar build -m pwa
+
+      - name: Upload PWA
+        uses: actions/upload-artifact@v4
+        with:
+          name: PWA-unstable
+          path: dist/pwa
+          if-no-files-found: error
+
+      - name: Upload SPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: SPA-unstable
+          path: dist/spa
+          if-no-files-found: error
+
+  build-windows:
+    needs: build-front-end
+    runs-on: windows-2019
+    name: Package Windows x64 executable
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout backend
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 14
+          architecture: x64
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Get branch or tag name
+        id: source_name
+        run: echo "SOURCE_NAME=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Install pkg
+        run: npm install -g pkg@4.5.1
+
+      - name: Make empty dirs to suppress pkg warnings
+        run: mkdir -p config sqlite covers VoiceWork
+
+      - name: Download front-end artifact (PWA)
+        uses: actions/download-artifact@v4
+        with:
+          name: PWA-unstable
+          path: dist
+
+      - name: Check front-end artifacts
+        run: ls -al dist/
+
+      - name: Package to executable
+        run: pkg package.json -t node14-win-x64 --out-path package
+
+      - name: Create archive
+        run: |
+          mkdir "${archive_name}"
+          cp package/* "${archive_name}/"
+          cp node_modules/sqlite3/lib/binding/*/*.node "${archive_name}/"
+        env:
+          archive_name: kikoeru-win-x64-${{ steps.source_name.outputs.SOURCE_NAME }}
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: kikoeru-win-x64-${{ steps.source_name.outputs.SOURCE_NAME }}
+          path: kikoeru-win-x64-${{ steps.source_name.outputs.SOURCE_NAME }}
+          if-no-files-found: error
+
+  test-pkg-archive:
+    runs-on: windows-2019
+    name: Test pkg release archive on Windows x64
+    needs: [build-windows]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Get branch or tag name
+        id: source_name
+        run: echo "SOURCE_NAME=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: kikoeru-win-x64-${{ steps.source_name.outputs.SOURCE_NAME }}
+
+      - name: List files
+        run: ls -al .
+
+      - name: Test pkg binary on Windows
+        shell: pwsh
+        run: |
+          $PSVersionTable
+          Start-Job { ./kikoeru-express.exe }
+          sleep 5
+          Get-Job | Receive-Job
+          sleep 5
+          curl --fail -I http://localhost:8888/
+          Get-Job | Stop-Job
+          Get-Job | Remove-Job
